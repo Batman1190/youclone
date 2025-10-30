@@ -56,6 +56,7 @@ function queueNextId() {
 }
 function goToNextInQueue() {
   const next = queueNextId();
+  console.log('[YouClone] goToNextInQueue, current:', playIndex, 'queue:', playQueue, 'next:', next);
   if (!next) return;
   location.hash = `#/watch?v=${encodeURIComponent(next)}`;
 }
@@ -75,6 +76,7 @@ async function loadPlayer(videoId) {
         },
         onStateChange: (ev) => {
           // 0 = ended
+          console.log('[YouClone] onStateChange:', ev.data, 'autoplay:', isAutoplayEnabled());
           if (ev.data === YT.PlayerState.ENDED && isAutoplayEnabled()) {
             goToNextInQueue();
           }
@@ -395,7 +397,7 @@ function renderWatch(videoId) {
     // Add to history
     upsertToList(LS_HISTORY, video);
   }).catch(()=>{});
-  // If queue only contains current video, attempt to extend from related
+  // Always extend queue with related videos for better auto-play
   extendQueueWithRelated(videoId).catch(()=>{});
 }
 

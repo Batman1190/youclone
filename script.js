@@ -383,8 +383,8 @@ function renderWatch(videoId) {
       <div id="related"></div>
     </div>
   `;
-  // Load player
-  loadPlayer(videoId).catch(()=>{});
+  // LOAD PLAYER after DOM is updated so yt-player is guaranteed present
+  setTimeout(() => { loadPlayer(videoId).catch(()=>{}); }, 0);
   // Ensure there is a queue (if none, build from related items later)
   if (!playQueue || playQueue.length === 0) {
     setQueueFromIds([videoId], videoId);

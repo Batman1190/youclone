@@ -327,8 +327,8 @@ function renderFeed(items) {
     const card = e.target.closest('[data-video-id]');
     if (card) {
       const id = card.getAttribute('data-video-id');
-      // Update queue start index to clicked item
-      setQueueFromIds(playQueue, id);
+      // Update queue to latest items for the clicked video
+      setQueueFromItems(items, id);
       location.hash = `#/watch?v=${encodeURIComponent(id)}`;
     }
   });
@@ -570,7 +570,8 @@ if (searchFormEl) {
     try {
       const url = `https://suggestqueries.google.com/complete/search?client=firefox&ds=yt&q=${encodeURIComponent(query)}`;
       const res = await fetch(url);
-      const data = await res.json();
+      const text = await res.text();
+      const data = JSON.parse(text);
       return Array.isArray(data[1]) ? data[1] : [];
     } catch {
       return [];

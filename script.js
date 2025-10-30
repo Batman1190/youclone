@@ -328,8 +328,8 @@ function renderFeed(items) {
     if (card) {
       const id = card.getAttribute('data-video-id');
       console.log('[YouClone] Video card clicked:', id, items);
-      // Update queue to latest items for the clicked video
       setQueueFromItems(items, id);
+      renderWatch(id); // Immediate view and playback
       location.hash = `#/watch?v=${encodeURIComponent(id)}`;
     }
   });
@@ -582,6 +582,26 @@ if (searchFormEl) {
   }
   function showSuggestions(suggestions) {
     console.log('[YouClone] showSuggestions:', suggestions);
+    // --- If suggestions, also show as a visible list for debug ---
+    let tempDebug = document.getElementById('debug-suggestions');
+    if (!tempDebug) {
+      tempDebug = document.createElement('pre');
+      tempDebug.id = 'debug-suggestions';
+      tempDebug.style.position = 'fixed';
+      tempDebug.style.right = '30px';
+      tempDebug.style.top = '20px';
+      tempDebug.style.background = '#222';
+      tempDebug.style.color = '#fff';
+      tempDebug.style.padding = '8px 14px';
+      tempDebug.style.zIndex = 9999;
+      tempDebug.style.maxWidth = '340px';
+      tempDebug.style.fontSize = '14px';
+      tempDebug.style.borderRadius = '8px';
+      document.body.appendChild(tempDebug);
+    }
+    tempDebug.textContent = '[Suggestions]: ' + JSON.stringify(suggestions);
+    setTimeout(() => { if (tempDebug) tempDebug.remove(); }, 3000);
+    // --- normal logic as before ---
     ensureSuggestionBox();
     suggestionBox.innerHTML = '';
     suggestionItems = [];

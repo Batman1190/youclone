@@ -1,0 +1,72 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>YouClone</title>
+  <link rel="stylesheet" href="style.css">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+</head>
+<body>
+  <!-- Header: Left (hamburger + logo), Center (search), Right (actions) -->
+  <header class="top-bar">
+    <div class="top-left">
+      <div class="hamburger" id="hamburger">
+        <div class="line"></div>
+        <div class="line"></div>
+        <div class="line"></div>
+      </div>
+      <a class="play-container" href="#/">
+        <div class="play-button"></div>
+        <span class="play-name">YouClone</span>
+      </a>
+    </div>
+    <div class="top-center">
+      <form id="search-form" class="search-form">
+        <input id="search-input" class="search-input" type="text" placeholder="Search" aria-label="Search" autocomplete="off" />
+        <button class="search-button" type="submit" aria-label="Search">
+          <i class="fa-solid fa-magnifying-glass"></i>
+        </button>
+        <button class="voice-button" type="button" aria-label="Search with your voice">
+          <i class="fa-solid fa-microphone"></i>
+        </button>
+      </form>
+    </div>
+    <div class="top-right">
+      <button class="icon-btn" title="Create"><i class="fa-solid fa-video"></i></button>
+      <button class="icon-btn" title="Notifications"><i class="fa-solid fa-bell"></i></button>
+      <div class="avatar" title="YouClone User">Y</div>
+    </div>
+  </header>
+
+  <!-- Sidebar Navigation -->
+  <div class="sidebar" id="sidebar">
+  <ul>
+    <li><i class="fa-solid fa-house"></i> <span>Home</span></li>
+    <li><i class="fa-solid fa-film"></i> <span>Shorts</span></li>
+    <li><i class="fa-solid fa-bell"></i> <span>Subscriptions</span></li>
+    <li><i class="fa-solid fa-clock-rotate-left"></i> <span>History</span></li>
+    <li><i class="fa-solid fa-list"></i> <span>Playlists</span></li>
+    <li><i class="fa-solid fa-video"></i> <span>Your videos</span></li>
+    <li><i class="fa-solid fa-clock"></i> <span>Watch later</span></li>
+    <li><i class="fa-solid fa-thumbs-up"></i> <span>Liked Videos</span></li>
+    <li><i class="fa-solid fa-download"></i> <span>Downloads</span></li>
+  </ul>
+   <div class="sidebar-footer">
+    <p>Owned and maintained by <strong>RodC</strong></p>
+  </div>
+</div>  
+
+  <!-- Main Content -->
+  <div class="main-content">
+    <div id="app">
+      <div id="feed-view" class="view hidden"></div>
+      <div id="watch-view" class="view hidden"></div>
+    </div>
+  </div>
+
+  <footer class="site-footer">
+  <p>Disclaimer: I do not own any of the videos or thumbnails displayed on this website. All content belongs to their respective owners.</p>
+</footer>
+  <script src="script.js"></script>
+</body>
+</html>

@@ -3,8 +3,41 @@
 <head>
   <meta charset="UTF-8">
   <title>YouClone</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="description" content="YouClone is a fast, lightweight YouTube-style app to search and watch videos.">
+  <meta name="robots" content="index,follow">
+  <link rel="canonical" href="" id="canonical-link">
+  <meta name="theme-color" content="#ffffff">
+
+  <!-- Open Graph -->
+  <meta property="og:site_name" content="YouClone">
+  <meta property="og:type" content="website">
+  <meta property="og:title" content="YouClone">
+  <meta property="og:description" content="Search and watch videos with a clean, fast experience.">
+  <meta property="og:url" content="">
+
+  <!-- Twitter -->
+  <meta name="twitter:card" content="summary">
+  <meta name="twitter:title" content="YouClone">
+  <meta name="twitter:description" content="Search and watch videos with a clean, fast experience.">
+
   <link rel="stylesheet" href="style.css">
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+  
+  <!-- Structured Data -->
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@type": "WebSite",
+    "name": "YouClone",
+    "url": "",
+    "potentialAction": {
+      "@type": "SearchAction",
+      "target": "#/search?q={search_term_string}",
+      "query-input": "required name=search_term_string"
+    }
+  }
+  </script>
 </head>
 <body>
   <!-- Header: Left (hamburger + logo), Center (search), Right (actions) -->
@@ -40,16 +73,16 @@
 
   <!-- Sidebar Navigation -->
   <div class="sidebar" id="sidebar">
-  <ul>
-    <li><i class="fa-solid fa-house"></i> <span>Home</span></li>
-    <li><i class="fa-solid fa-film"></i> <span>Shorts</span></li>
-    <li><i class="fa-solid fa-bell"></i> <span>Subscriptions</span></li>
-    <li><i class="fa-solid fa-clock-rotate-left"></i> <span>History</span></li>
-    <li><i class="fa-solid fa-list"></i> <span>Playlists</span></li>
-    <li><i class="fa-solid fa-video"></i> <span>Your videos</span></li>
-    <li><i class="fa-solid fa-clock"></i> <span>Watch later</span></li>
-    <li><i class="fa-solid fa-thumbs-up"></i> <span>Liked Videos</span></li>
-    <li><i class="fa-solid fa-download"></i> <span>Downloads</span></li>
+  <ul id="sidebar-menu">
+    <li data-route="/"><i class="fa-solid fa-house"></i> <span>Home</span></li>
+    <li data-route="/shorts"><i class="fa-solid fa-film"></i> <span>Shorts</span></li>
+    <li data-route="/subscriptions"><i class="fa-solid fa-bell"></i> <span>Subscriptions</span></li>
+    <li data-route="/history"><i class="fa-solid fa-clock-rotate-left"></i> <span>History</span></li>
+    <li data-route="/playlists"><i class="fa-solid fa-list"></i> <span>Playlists</span></li>
+    <li data-route="/your-videos"><i class="fa-solid fa-video"></i> <span>Your videos</span></li>
+    <li data-route="/watch-later"><i class="fa-solid fa-clock"></i> <span>Watch later</span></li>
+    <li data-route="/liked"><i class="fa-solid fa-thumbs-up"></i> <span>Liked Videos</span></li>
+    <li data-route="/downloads"><i class="fa-solid fa-download"></i> <span>Downloads</span></li>
   </ul>
    <div class="sidebar-footer">
     <p>Owned and maintained by <strong>RodC</strong></p>

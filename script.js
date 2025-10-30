@@ -352,6 +352,16 @@ function renderVideoCard(v) {
 }
 
 function renderWatch(videoId) {
+  // Destroy any existing YouTube player before replacing the container
+  if (ytPlayer) {
+    try {
+      ytPlayer.destroy && ytPlayer.destroy();
+    } catch(err) {
+      console.warn('[YouClone] Error destroying ytPlayer:', err);
+    }
+    ytPlayer = null;
+    ytPlayerReadyPromise = null;
+  }
   feedViewEl.classList.add('hidden');
   watchViewEl.classList.remove('hidden');
   watchViewEl.innerHTML = `
@@ -532,6 +542,85 @@ window.addEventListener('load', handleRoute);
 
 // Search form
 if (searchFormEl) {
+  // --- Autocomplete Search Suggestions ---
+  let suggestionBox = null;
+  let suggestionItems = [];
+  // Create suggestion box element
+  function ensureSuggestionBox() {
+    if (!suggestionBox) {
+      suggestionBox = document.createElement('div');
+      suggestionBox.className = 'search-suggestions';
+      suggestionBox.style.position = 'absolute';
+      suggestionBox.style.zIndex = 99;
+      suggestionBox.style.background = 'white';
+      suggestionBox.style.border = '1px solid #eee';
+      suggestionBox.style.left = searchInputEl.offsetLeft + 'px';
+      suggestionBox.style.top = (searchInputEl.offsetTop + searchInputEl.offsetHeight) + 'px';
+      suggestionBox.style.width = searchInputEl.offsetWidth + 'px';
+      suggestionBox.style.maxHeight = '220px';
+      suggestionBox.style.overflowY = 'auto';
+      suggestionBox.style.boxShadow = '0 2px 8px rgba(0,0,0,0.08)';
+      suggestionBox.style.fontSize = '16px';
+      suggestionBox.style.display = 'none';
+      searchInputEl.parentElement.appendChild(suggestionBox);
+    }
+  }
+  async function fetchSuggestions(query) {
+    if (!query) return [];
+    try {
+      const url = `https://suggestqueries.google.com/complete/search?client=firefox&ds=yt&q=${encodeURIComponent(query)}`;
+      const res = await fetch(url);
+      const data = await res.json();
+      return Array.isArray(data[1]) ? data[1] : [];
+    } catch {
+      return [];
+    }
+  }
+  function showSuggestions(suggestions) {
+    ensureSuggestionBox();
+    suggestionBox.innerHTML = '';
+    suggestionItems = [];
+    if (suggestions.length === 0) {
+      suggestionBox.style.display = 'none';
+      return;
+    }
+    suggestions.forEach(s => {
+      const item = document.createElement('div');
+      item.textContent = s;
+      item.style.padding = '8px 14px';
+      item.style.cursor = 'pointer';
+      item.addEventListener('mousedown', e => {
+        e.preventDefault(); // prevent input blur
+        searchInputEl.value = s;
+        suggestionBox.style.display = 'none';
+        searchFormEl.dispatchEvent(new Event('submit'));
+      });
+      suggestionBox.appendChild(item);
+      suggestionItems.push(item);
+    });
+    suggestionBox.style.display = 'block';
+    // Adjust position in case window resized
+    suggestionBox.style.left = searchInputEl.offsetLeft + 'px';
+    suggestionBox.style.top = (searchInputEl.offsetTop + searchInputEl.offsetHeight) + 'px';
+    suggestionBox.style.width = searchInputEl.offsetWidth + 'px';
+  }
+  // Hide suggestion box
+  function hideSuggestions() {
+    if (suggestionBox) suggestionBox.style.display = 'none';
+  }
+  // Listen for input events
+  searchInputEl.addEventListener('input', async () => {
+    const q = searchInputEl.value.trim();
+    if (q.length === 0) { hideSuggestions(); return; }
+    const suggestions = await fetchSuggestions(q);
+    showSuggestions(suggestions);
+  });
+  // Hide suggestions on blur
+  searchInputEl.addEventListener('blur', () => setTimeout(hideSuggestions, 120));
+  // Hide suggestions on form submit
+  searchFormEl.addEventListener('submit', () => hideSuggestions());
+  // --- End autocomplete ---
+
   searchFormEl.addEventListener('submit', (e) => {
     e.preventDefault();
     const q = searchInputEl.value.trim();

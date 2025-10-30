@@ -64,6 +64,35 @@ function goToNextInQueue() {
 let youcloneHadUserGesture = false;
 window.addEventListener('pointerdown', () => { youcloneHadUserGesture = true; }, { capture: true, once: false });
 window.addEventListener('keydown', () => { youcloneHadUserGesture = true; }, { capture: true, once: false });
+
+function setCurrentInQueue(videoId) {
+  if (!Array.isArray(playQueue)) return;
+  const idx = playQueue.indexOf(videoId);
+  if (idx >= 0) playIndex = idx;
+}
+function queuePrevId() {
+  if (playIndex <= 0) return null;
+  return playQueue[playIndex - 1];
+}
+function goToPrevInQueue() {
+  const prev = queuePrevId();
+  if (!prev) return;
+  location.hash = `#/watch?v=${encodeURIComponent(prev)}`;
+}
+function seekBy(seconds) {
+  if (!ytPlayer || typeof ytPlayer.getCurrentTime !== 'function') return;
+  const now = Number(ytPlayer.getCurrentTime?.() || 0);
+  const target = Math.max(0, now + seconds);
+  try { ytPlayer.seekTo && ytPlayer.seekTo(target, true); } catch (_) {}
+}
+function togglePlayPause() {
+  if (!ytPlayer || typeof ytPlayer.getPlayerState !== 'function') return;
+  try {
+    const st = ytPlayer.getPlayerState();
+    if (st === YT.PlayerState.PLAYING) ytPlayer.pauseVideo && ytPlayer.pauseVideo(); else ytPlayer.playVideo && ytPlayer.playVideo();
+  } catch (_) {}
+}
+
 function loadPlayer(videoId) {
   return (async () => {
     await ensureYouTubeApi();
@@ -396,6 +425,11 @@ function renderWatch(videoId) {
         <div class="watch-title" id="watch-title"></div>
         <div class="watch-sub" id="watch-sub"></div>
         <div class="watch-actions">
+          <button class="action-btn" id="btn-prev"><i class="fa-solid fa-backward"></i><span>Prev</span></button>
+          <button class="action-btn" id="btn-replay-10"><i class="fa-solid fa-rotate-left"></i><span>-10s</span></button>
+          <button class="action-btn" id="btn-play-pause"><i class="fa-solid fa-play"></i><span>Play/Pause</span></button>
+          <button class="action-btn" id="btn-forward-10"><i class="fa-solid fa-rotate-right"></i><span>+10s</span></button>
+          <button class="action-btn" id="btn-next"><i class="fa-solid fa-forward"></i><span>Next</span></button>
           <button class="action-btn" id="btn-like"><i class="fa-solid fa-thumbs-up"></i><span>Like</span></button>
           <button class="action-btn" id="btn-watch-later"><i class="fa-solid fa-clock"></i><span>Watch later</span></button>
           <button class="action-btn" id="btn-autoplay"><i class="fa-solid fa-play"></i><span>Autoplay</span></button>
@@ -410,6 +444,8 @@ function renderWatch(videoId) {
   if (!playQueue || playQueue.length === 0) {
     setQueueFromIds([videoId], videoId);
   }
+  // Keep current index in sync
+  setCurrentInQueue(videoId);
   // Fetch details, update UI, and log history
   bestEffortFetchDetails(videoId).then(video => {
     if (!video) return;
@@ -421,8 +457,22 @@ function renderWatch(videoId) {
     const likeBtn = document.getElementById('btn-like');
     const laterBtn = document.getElementById('btn-watch-later');
     const autoplayBtn = document.getElementById('btn-autoplay');
+    const prevBtn = document.getElementById('btn-prev');
+    const replayBtn = document.getElementById('btn-replay-10');
+    const playPauseBtn = document.getElementById('btn-play-pause');
+    const forwardBtn = document.getElementById('btn-forward-10');
+    const nextBtn = document.getElementById('btn-next');
+
     likeBtn.onclick = () => toggleLike(video);
     laterBtn.onclick = () => toggleWatchLater(video);
+
+    // Transport controls
+    prevBtn.onclick = () => goToPrevInQueue();
+    replayBtn.onclick = () => seekBy(-10);
+    playPauseBtn.onclick = () => togglePlayPause();
+    forwardBtn.onclick = () => seekBy(10);
+    nextBtn.onclick = () => goToNextInQueue();
+
     // Autoplay toggle
     updateAutoplayButton();
     autoplayBtn.onclick = () => {
@@ -527,6 +577,8 @@ async function handleRoute() {
   const { route, params } = parseHash();
   if (route === '/watch' && params.v) {
     setPageMeta('Watching… • YouClone', 'Watch videos on YouClone');
+    // Keep queue index in sync when navigating directly via hash
+    setCurrentInQueue(params.v);
     renderWatch(params.v);
   } else if (route === '/search' && params.q) {
     const { items } = await fetchFeed({ query: params.q });
@@ -704,3 +756,27 @@ function updateCanonical() {
     } catch {}
   }
 }
+
+// Global keyboard shortcuts on watch view
+window.addEventListener('keydown', (e) => {
+  if (watchViewEl.classList.contains('hidden')) return;
+  // Avoid interfering with typing in inputs
+  const tag = (e.target && e.target.tagName) ? e.target.tagName.toLowerCase() : '';
+  if (tag === 'input' || tag === 'textarea' || tag === 'select' || e.isContentEditable) return;
+  if (e.key === 'ArrowLeft' || e.key === 'j' || e.key === 'J') {
+    e.preventDefault();
+    seekBy(e.key === 'ArrowLeft' ? -5 : -10);
+  } else if (e.key === 'ArrowRight' || e.key === 'l' || e.key === 'L') {
+    e.preventDefault();
+    seekBy(e.key === 'ArrowRight' ? 5 : 10);
+  } else if (e.key === ' ' || e.key === 'k' || e.key === 'K') {
+    e.preventDefault();
+    togglePlayPause();
+  } else if (e.key === 'n' || e.key === 'N') {
+    e.preventDefault();
+    goToNextInQueue();
+  } else if (e.key === 'p' || e.key === 'P') {
+    e.preventDefault();
+    goToPrevInQueue();
+  }
+});

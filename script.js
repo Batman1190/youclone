@@ -327,6 +327,7 @@ function renderFeed(items) {
     const card = e.target.closest('[data-video-id]');
     if (card) {
       const id = card.getAttribute('data-video-id');
+      console.log('[YouClone] Video card clicked:', id, items);
       // Update queue to latest items for the clicked video
       setQueueFromItems(items, id);
       location.hash = `#/watch?v=${encodeURIComponent(id)}`;
@@ -572,12 +573,15 @@ if (searchFormEl) {
       const res = await fetch(url);
       const text = await res.text();
       const data = JSON.parse(text);
+      console.log('[YouClone] fetchSuggestions:', data);
       return Array.isArray(data[1]) ? data[1] : [];
-    } catch {
+    } catch (err) {
+      console.warn('[YouClone] fetchSuggestions error:', err);
       return [];
     }
   }
   function showSuggestions(suggestions) {
+    console.log('[YouClone] showSuggestions:', suggestions);
     ensureSuggestionBox();
     suggestionBox.innerHTML = '';
     suggestionItems = [];
@@ -600,10 +604,19 @@ if (searchFormEl) {
       suggestionItems.push(item);
     });
     suggestionBox.style.display = 'block';
-    // Adjust position in case window resized
-    suggestionBox.style.left = searchInputEl.offsetLeft + 'px';
-    suggestionBox.style.top = (searchInputEl.offsetTop + searchInputEl.offsetHeight) + 'px';
-    suggestionBox.style.width = searchInputEl.offsetWidth + 'px';
+    // Adjust position robustly using getBoundingClientRect
+    const rect = searchInputEl.getBoundingClientRect();
+    suggestionBox.style.position = 'fixed';
+    suggestionBox.style.left = rect.left + 'px';
+    suggestionBox.style.top = (rect.top + rect.height) + 'px';
+    suggestionBox.style.width = rect.width + 'px';
+    suggestionBox.style.zIndex = 9999;
+    suggestionBox.style.background = 'white';
+    suggestionBox.style.border = '1px solid #eee';
+    suggestionBox.style.boxShadow = '0 2px 8px rgba(0,0,0,0.15)';
+    suggestionBox.style.maxHeight = '220px';
+    suggestionBox.style.overflowY = 'auto';
+    suggestionBox.style.fontSize = '16px';
   }
   // Hide suggestion box
   function hideSuggestions() {

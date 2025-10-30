@@ -327,10 +327,13 @@ function renderFeed(items) {
     const card = e.target.closest('[data-video-id]');
     if (card) {
       const id = card.getAttribute('data-video-id');
-      console.log('[YouClone] Video card clicked:', id, items);
       setQueueFromItems(items, id);
-      renderWatch(id); // Immediate view and playback
-      location.hash = `#/watch?v=${encodeURIComponent(id)}`;
+      renderWatch(id);
+      // Only update location.hash if not correct
+      const expectedHash = `#/watch?v=${encodeURIComponent(id)}`;
+      if (location.hash !== expectedHash) {
+        location.hash = expectedHash;
+      }
     }
   });
 }
@@ -543,118 +546,7 @@ window.addEventListener('load', handleRoute);
 
 // Search form
 if (searchFormEl) {
-  // --- Autocomplete Search Suggestions ---
-  let suggestionBox = null;
-  let suggestionItems = [];
-  // Create suggestion box element
-  function ensureSuggestionBox() {
-    if (!suggestionBox) {
-      suggestionBox = document.createElement('div');
-      suggestionBox.className = 'search-suggestions';
-      suggestionBox.style.position = 'absolute';
-      suggestionBox.style.zIndex = 99;
-      suggestionBox.style.background = 'white';
-      suggestionBox.style.border = '1px solid #eee';
-      suggestionBox.style.left = searchInputEl.offsetLeft + 'px';
-      suggestionBox.style.top = (searchInputEl.offsetTop + searchInputEl.offsetHeight) + 'px';
-      suggestionBox.style.width = searchInputEl.offsetWidth + 'px';
-      suggestionBox.style.maxHeight = '220px';
-      suggestionBox.style.overflowY = 'auto';
-      suggestionBox.style.boxShadow = '0 2px 8px rgba(0,0,0,0.08)';
-      suggestionBox.style.fontSize = '16px';
-      suggestionBox.style.display = 'none';
-      searchInputEl.parentElement.appendChild(suggestionBox);
-    }
-  }
-  async function fetchSuggestions(query) {
-    if (!query) return [];
-    try {
-      const url = `https://suggestqueries.google.com/complete/search?client=firefox&ds=yt&q=${encodeURIComponent(query)}`;
-      const res = await fetch(url);
-      const text = await res.text();
-      const data = JSON.parse(text);
-      console.log('[YouClone] fetchSuggestions:', data);
-      return Array.isArray(data[1]) ? data[1] : [];
-    } catch (err) {
-      console.warn('[YouClone] fetchSuggestions error:', err);
-      return [];
-    }
-  }
-  function showSuggestions(suggestions) {
-    console.log('[YouClone] showSuggestions:', suggestions);
-    // --- If suggestions, also show as a visible list for debug ---
-    let tempDebug = document.getElementById('debug-suggestions');
-    if (!tempDebug) {
-      tempDebug = document.createElement('pre');
-      tempDebug.id = 'debug-suggestions';
-      tempDebug.style.position = 'fixed';
-      tempDebug.style.right = '30px';
-      tempDebug.style.top = '20px';
-      tempDebug.style.background = '#222';
-      tempDebug.style.color = '#fff';
-      tempDebug.style.padding = '8px 14px';
-      tempDebug.style.zIndex = 9999;
-      tempDebug.style.maxWidth = '340px';
-      tempDebug.style.fontSize = '14px';
-      tempDebug.style.borderRadius = '8px';
-      document.body.appendChild(tempDebug);
-    }
-    tempDebug.textContent = '[Suggestions]: ' + JSON.stringify(suggestions);
-    setTimeout(() => { if (tempDebug) tempDebug.remove(); }, 3000);
-    // --- normal logic as before ---
-    ensureSuggestionBox();
-    suggestionBox.innerHTML = '';
-    suggestionItems = [];
-    if (suggestions.length === 0) {
-      suggestionBox.style.display = 'none';
-      return;
-    }
-    suggestions.forEach(s => {
-      const item = document.createElement('div');
-      item.textContent = s;
-      item.style.padding = '8px 14px';
-      item.style.cursor = 'pointer';
-      item.addEventListener('mousedown', e => {
-        e.preventDefault(); // prevent input blur
-        searchInputEl.value = s;
-        suggestionBox.style.display = 'none';
-        searchFormEl.dispatchEvent(new Event('submit'));
-      });
-      suggestionBox.appendChild(item);
-      suggestionItems.push(item);
-    });
-    suggestionBox.style.display = 'block';
-    // Adjust position robustly using getBoundingClientRect
-    const rect = searchInputEl.getBoundingClientRect();
-    suggestionBox.style.position = 'fixed';
-    suggestionBox.style.left = rect.left + 'px';
-    suggestionBox.style.top = (rect.top + rect.height) + 'px';
-    suggestionBox.style.width = rect.width + 'px';
-    suggestionBox.style.zIndex = 9999;
-    suggestionBox.style.background = 'white';
-    suggestionBox.style.border = '1px solid #eee';
-    suggestionBox.style.boxShadow = '0 2px 8px rgba(0,0,0,0.15)';
-    suggestionBox.style.maxHeight = '220px';
-    suggestionBox.style.overflowY = 'auto';
-    suggestionBox.style.fontSize = '16px';
-  }
-  // Hide suggestion box
-  function hideSuggestions() {
-    if (suggestionBox) suggestionBox.style.display = 'none';
-  }
-  // Listen for input events
-  searchInputEl.addEventListener('input', async () => {
-    const q = searchInputEl.value.trim();
-    if (q.length === 0) { hideSuggestions(); return; }
-    const suggestions = await fetchSuggestions(q);
-    showSuggestions(suggestions);
-  });
-  // Hide suggestions on blur
-  searchInputEl.addEventListener('blur', () => setTimeout(hideSuggestions, 120));
-  // Hide suggestions on form submit
-  searchFormEl.addEventListener('submit', () => hideSuggestions());
-  // --- End autocomplete ---
-
+  // Only native search: no suggestions/autocomplete
   searchFormEl.addEventListener('submit', (e) => {
     e.preventDefault();
     const q = searchInputEl.value.trim();

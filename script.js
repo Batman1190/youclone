@@ -199,7 +199,7 @@ function loadPlayer(videoId) {
       ytPlayerReadyPromise = new Promise((resolveReady) => {
         ytPlayer = new YT.Player(containerId, {
           videoId,
-          playerVars: { rel: 0, modestbranding: 1, playsinline: 1, mute: 1, autoplay: 1 },
+          playerVars: { rel: 0, modestbranding: 1, playsinline: 1, mute: 1, autoplay: 1, controls: 1 },
           events: {
             onReady: () => {
               ytPlayer.mute && ytPlayer.mute(); // ensure muted for autoplay compliance
@@ -521,12 +521,6 @@ function renderWatch(videoId) {
     <div class="watch-layout">
       <div>
         <div class="player"><div id="yt-player" style="width:100%; height:100%"></div></div>
-        <div id="progress-container" style="padding: 8px 0;">
-          <div id="progress-track" style="position: relative; height: 6px; background: #e5e5e5; border-radius: 3px; cursor: pointer;">
-            <div id="progress-fill" style="position: absolute; left: 0; top: 0; height: 6px; width: 0%; background: #ff0000; border-radius: 3px;"></div>
-            <div id="progress-thumb" style="position: absolute; top: 50%; transform: translate(-50%, -50%); height: 14px; width: 14px; border-radius: 7px; background: #ff0000; left: 0%; cursor: pointer;"></div>
-          </div>
-        </div>
         <div class="watch-title" id="watch-title"></div>
         <div class="watch-sub" id="watch-sub"></div>
         <div class="watch-actions">
@@ -551,9 +545,9 @@ function renderWatch(videoId) {
   }
   // Keep current index in sync
   setCurrentInQueue(videoId);
-  // Setup progress bar interactions
-  setupProgressBar();
-  updateProgressUI();
+  // Remove progress bar setup calls since UI removed
+  // setupProgressBar();
+  // updateProgressUI();
 
   // Fetch details, update UI, and log history
   bestEffortFetchDetails(videoId).then(video => {

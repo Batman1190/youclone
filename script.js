@@ -28,6 +28,7 @@ let playQueue = [];
 let playIndex = -1;
 let ytReadyPromise = null;
 let ytPlayer = null;
+let ytPlayerReadyPromise = null;
 function ensureYouTubeApi() {
   if (ytReadyPromise) return ytReadyPromise;
   ytReadyPromise = new Promise((resolve) => {
@@ -64,10 +65,14 @@ async function loadPlayer(videoId) {
   const container = document.getElementById(containerId);
   if (!container) return;
   if (!ytPlayer) {
-    ytPlayer = new YT.Player(containerId, {
+    ytPlayerReadyPromise = new Promise((resolveReady) => {
+      ytPlayer = new YT.Player(containerId, {
       videoId,
       playerVars: { rel: 0, modestbranding: 1, playsinline: 1 },
       events: {
+        onReady: () => {
+          resolveReady();
+        },
         onStateChange: (ev) => {
           // 0 = ended
           if (ev.data === YT.PlayerState.ENDED && isAutoplayEnabled()) {
@@ -76,11 +81,19 @@ async function loadPlayer(videoId) {
         }
       }
     });
+    });
+    await ytPlayerReadyPromise;
   } else {
     try {
+      if (!ytPlayerReadyPromise) {
+        // in case of reloads, consider player ready by default after small tick
+        ytPlayerReadyPromise = Promise.resolve();
+      }
+      await ytPlayerReadyPromise;
       ytPlayer.loadVideoById(videoId);
     } catch (_) {
       ytPlayer = null;
+      ytPlayerReadyPromise = null;
       await loadPlayer(videoId);
     }
   }

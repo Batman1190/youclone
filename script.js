@@ -60,45 +60,48 @@ function goToNextInQueue() {
   if (!next) return;
   location.hash = `#/watch?v=${encodeURIComponent(next)}`;
 }
-async function loadPlayer(videoId) {
-  await ensureYouTubeApi();
-  const containerId = 'yt-player';
-  const container = document.getElementById(containerId);
-  if (!container) return;
-  if (!ytPlayer) {
-    ytPlayerReadyPromise = new Promise((resolveReady) => {
-      ytPlayer = new YT.Player(containerId, {
-      videoId,
-      playerVars: { rel: 0, modestbranding: 1, playsinline: 1 },
-      events: {
-        onReady: () => {
-          resolveReady();
-        },
-        onStateChange: (ev) => {
-          // 0 = ended
-          console.log('[YouClone] onStateChange:', ev.data, 'autoplay:', isAutoplayEnabled());
-          if (ev.data === YT.PlayerState.ENDED && isAutoplayEnabled()) {
-            goToNextInQueue();
+function loadPlayer(videoId) {
+  return (async () => {
+    await ensureYouTubeApi();
+    const containerId = 'yt-player';
+    const container = document.getElementById(containerId);
+    if (!container) return;
+    if (!ytPlayer) {
+      ytPlayerReadyPromise = new Promise((resolveReady) => {
+        ytPlayer = new YT.Player(containerId, {
+          videoId,
+          playerVars: { rel: 0, modestbranding: 1, playsinline: 1, mute: 1, autoplay: 1 },
+          events: {
+            onReady: () => {
+              ytPlayer.mute && ytPlayer.mute(); // ensure muted for autoplay compliance
+              resolveReady();
+            },
+            onStateChange: (ev) => {
+              // 0 = ended
+              console.log('[YouClone] onStateChange:', ev.data, 'autoplay:', isAutoplayEnabled());
+              if (ev.data === YT.PlayerState.ENDED && isAutoplayEnabled()) {
+                goToNextInQueue();
+              }
+            }
           }
-        }
-      }
-    });
-    });
-    await ytPlayerReadyPromise;
-  } else {
-    try {
-      if (!ytPlayerReadyPromise) {
-        // in case of reloads, consider player ready by default after small tick
-        ytPlayerReadyPromise = Promise.resolve();
-      }
+        });
+      });
       await ytPlayerReadyPromise;
-      ytPlayer.loadVideoById(videoId);
-    } catch (_) {
-      ytPlayer = null;
-      ytPlayerReadyPromise = null;
-      await loadPlayer(videoId);
+    } else {
+      try {
+        if (!ytPlayerReadyPromise) {
+          ytPlayerReadyPromise = Promise.resolve();
+        }
+        await ytPlayerReadyPromise;
+        ytPlayer.loadVideoById(videoId);
+        ytPlayer.mute && ytPlayer.mute(); // ensure muted for subsequent autoplays
+      } catch (_) {
+        ytPlayer = null;
+        ytPlayerReadyPromise = null;
+        await loadPlayer(videoId);
+      }
     }
-  }
+  })();
 }
 // Local storage lists
 const LS_HISTORY = 'YOUCLONE_HISTORY';

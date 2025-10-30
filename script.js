@@ -60,6 +60,10 @@ function goToNextInQueue() {
   if (!next) return;
   location.hash = `#/watch?v=${encodeURIComponent(next)}`;
 }
+// Track if we have a real user gesture to satisfy autoplay-with-sound policies
+let youcloneHadUserGesture = false;
+window.addEventListener('pointerdown', () => { youcloneHadUserGesture = true; }, { capture: true, once: false });
+window.addEventListener('keydown', () => { youcloneHadUserGesture = true; }, { capture: true, once: false });
 function loadPlayer(videoId) {
   return (async () => {
     await ensureYouTubeApi();
@@ -74,6 +78,13 @@ function loadPlayer(videoId) {
           events: {
             onReady: () => {
               ytPlayer.mute && ytPlayer.mute(); // ensure muted for autoplay compliance
+              // If we already have a user gesture, play with sound
+              if (youcloneHadUserGesture) {
+                try {
+                  ytPlayer.unMute && ytPlayer.unMute();
+                  ytPlayer.playVideo && ytPlayer.playVideo();
+                } catch (_) {}
+              }
               resolveReady();
             },
             onStateChange: (ev) => {
@@ -94,7 +105,14 @@ function loadPlayer(videoId) {
         }
         await ytPlayerReadyPromise;
         ytPlayer.loadVideoById(videoId);
-        ytPlayer.mute && ytPlayer.mute(); // ensure muted for subsequent autoplays
+        ytPlayer.mute && ytPlayer.mute(); // default muted
+        if (youcloneHadUserGesture) {
+          // If we have user gesture, play with sound
+          try {
+            ytPlayer.unMute && ytPlayer.unMute();
+            ytPlayer.playVideo && ytPlayer.playVideo();
+          } catch (_) {}
+        }
       } catch (_) {
         ytPlayer = null;
         ytPlayerReadyPromise = null;
@@ -330,9 +348,9 @@ function renderFeed(items) {
     const card = e.target.closest('[data-video-id]');
     if (card) {
       const id = card.getAttribute('data-video-id');
+      youcloneHadUserGesture = true; // mark: this click is a real user gesture
       setQueueFromItems(items, id);
       renderWatch(id);
-      // Only update location.hash if not correct
       const expectedHash = `#/watch?v=${encodeURIComponent(id)}`;
       if (location.hash !== expectedHash) {
         location.hash = expectedHash;

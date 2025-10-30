@@ -65,6 +65,102 @@ let youcloneHadUserGesture = false;
 window.addEventListener('pointerdown', () => { youcloneHadUserGesture = true; }, { capture: true, once: false });
 window.addEventListener('keydown', () => { youcloneHadUserGesture = true; }, { capture: true, once: false });
 
+// Progress (timeline) elements and state
+let progressContainerEl = null;
+let progressTrackEl = null;
+let progressFillEl = null;
+let progressThumbEl = null;
+let progressDragging = false;
+let progressUpdateTimer = null;
+
+function teardownProgressBar() {
+  if (progressUpdateTimer) {
+    clearInterval(progressUpdateTimer);
+    progressUpdateTimer = null;
+  }
+  progressContainerEl = null;
+  progressTrackEl = null;
+  progressFillEl = null;
+  progressThumbEl = null;
+  progressDragging = false;
+}
+
+function getCurrentAndDuration() {
+  const current = ytPlayer && ytPlayer.getCurrentTime ? Number(ytPlayer.getCurrentTime() || 0) : 0;
+  const duration = ytPlayer && ytPlayer.getDuration ? Number(ytPlayer.getDuration() || 0) : 0;
+  return { current, duration };
+}
+
+function updateProgressUI() {
+  if (!progressTrackEl || !progressFillEl || !progressThumbEl) return;
+  if (progressDragging) return; // don't override while dragging
+  const { current, duration } = getCurrentAndDuration();
+  if (!duration || duration <= 0) {
+    progressFillEl.style.width = '0%';
+    progressThumbEl.style.left = '0%';
+    return;
+  }
+  const pct = Math.max(0, Math.min(100, (current / duration) * 100));
+  progressFillEl.style.width = pct + '%';
+  progressThumbEl.style.left = pct + '%';
+}
+
+function percentFromClientX(clientX) {
+  const rect = progressTrackEl.getBoundingClientRect();
+  const x = Math.max(rect.left, Math.min(rect.right, clientX));
+  const pct = ((x - rect.left) / rect.width) * 100;
+  return Math.max(0, Math.min(100, pct));
+}
+
+function seekToPercent(pct) {
+  const { duration } = getCurrentAndDuration();
+  if (!duration || !ytPlayer || !ytPlayer.seekTo) return;
+  const seconds = (pct / 100) * duration;
+  try { ytPlayer.seekTo(seconds, true); } catch (_) {}
+}
+
+function setupProgressBar() {
+  progressContainerEl = document.getElementById('progress-container');
+  progressTrackEl = document.getElementById('progress-track');
+  progressFillEl = document.getElementById('progress-fill');
+  progressThumbEl = document.getElementById('progress-thumb');
+  if (!progressContainerEl || !progressTrackEl || !progressFillEl || !progressThumbEl) return;
+
+  const onDown = (clientX) => {
+    progressDragging = true;
+    const pct = percentFromClientX(clientX);
+    progressFillEl.style.width = pct + '%';
+    progressThumbEl.style.left = pct + '%';
+  };
+  const onMove = (clientX) => {
+    if (!progressDragging) return;
+    const pct = percentFromClientX(clientX);
+    progressFillEl.style.width = pct + '%';
+    progressThumbEl.style.left = pct + '%';
+  };
+  const onUp = (clientX) => {
+    if (!progressDragging) return;
+    const pct = percentFromClientX(clientX);
+    progressDragging = false;
+    seekToPercent(pct);
+  };
+
+  // Mouse events
+  progressTrackEl.addEventListener('mousedown', (e) => { e.preventDefault(); onDown(e.clientX); });
+  progressThumbEl.addEventListener('mousedown', (e) => { e.preventDefault(); onDown(e.clientX); });
+  window.addEventListener('mousemove', (e) => { onMove(e.clientX); });
+  window.addEventListener('mouseup', (e) => { onUp(e.clientX); });
+  // Touch events
+  progressTrackEl.addEventListener('touchstart', (e) => { if (e.touches[0]) onDown(e.touches[0].clientX); }, { passive: true });
+  progressThumbEl.addEventListener('touchstart', (e) => { if (e.touches[0]) onDown(e.touches[0].clientX); }, { passive: true });
+  window.addEventListener('touchmove', (e) => { if (e.touches[0]) onMove(e.touches[0].clientX); }, { passive: true });
+  window.addEventListener('touchend', (e) => { const t = (e.changedTouches && e.changedTouches[0]) ? e.changedTouches[0] : null; onUp(t ? t.clientX : 0); }, { passive: true });
+
+  // Periodic update while not dragging
+  if (progressUpdateTimer) clearInterval(progressUpdateTimer);
+  progressUpdateTimer = setInterval(updateProgressUI, 250);
+}
+
 function setCurrentInQueue(videoId) {
   if (!Array.isArray(playQueue)) return;
   const idx = playQueue.indexOf(videoId);
@@ -416,12 +512,21 @@ function renderWatch(videoId) {
     ytPlayer = null;
     ytPlayerReadyPromise = null;
   }
+  // Teardown any prior progress bar timers
+  teardownProgressBar();
+
   feedViewEl.classList.add('hidden');
   watchViewEl.classList.remove('hidden');
   watchViewEl.innerHTML = `
     <div class="watch-layout">
       <div>
         <div class="player"><div id="yt-player" style="width:100%; height:100%"></div></div>
+        <div id="progress-container" style="padding: 8px 0;">
+          <div id="progress-track" style="position: relative; height: 6px; background: #e5e5e5; border-radius: 3px; cursor: pointer;">
+            <div id="progress-fill" style="position: absolute; left: 0; top: 0; height: 6px; width: 0%; background: #ff0000; border-radius: 3px;"></div>
+            <div id="progress-thumb" style="position: absolute; top: 50%; transform: translate(-50%, -50%); height: 14px; width: 14px; border-radius: 7px; background: #ff0000; left: 0%; cursor: pointer;"></div>
+          </div>
+        </div>
         <div class="watch-title" id="watch-title"></div>
         <div class="watch-sub" id="watch-sub"></div>
         <div class="watch-actions">
@@ -446,6 +551,10 @@ function renderWatch(videoId) {
   }
   // Keep current index in sync
   setCurrentInQueue(videoId);
+  // Setup progress bar interactions
+  setupProgressBar();
+  updateProgressUI();
+
   // Fetch details, update UI, and log history
   bestEffortFetchDetails(videoId).then(video => {
     if (!video) return;
